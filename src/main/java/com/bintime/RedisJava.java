@@ -1,8 +1,5 @@
 package com.bintime;
 
-/**
- * Created by Chirp on 09.06.2017.
- */
 
 import redis.clients.jedis.Jedis;
 
@@ -35,26 +32,26 @@ public class RedisJava {
 
         Map<String, String> mapOf1 = new HashMap<>();
         mapOf1.put("id", "1");
-        mapOf1.put("price", "126.8");
+        mapOf1.put("price", "146.8");
         mapOf1.put("stock", "0");
         jedis.hmset("of:1", mapOf1);
 
         Map<String, String> mapOf2 = new HashMap<>();
         mapOf2.put("id", "2");
-        mapOf2.put("price", "126.8");
-        mapOf2.put("stock", "0");
+        mapOf2.put("price", "1156.8");
+        mapOf2.put("stock", "2");
         jedis.hmset("of:2", mapOf2);
 
         Map<String, String> mapOf3 = new HashMap<>();
         mapOf3.put("id", "3");
-        mapOf3.put("price", "126.8");
-        mapOf3.put("stock", "0");
+        mapOf3.put("price", "1146.8");
+        mapOf3.put("stock", "1");
         jedis.hmset("of:3", mapOf3);
 
         Map<String, String> mapOf4 = new HashMap<>();
         mapOf4.put("id", "4");
-        mapOf4.put("price", "126.8");
-        mapOf4.put("stock", "0");
+        mapOf4.put("price", "16.8");
+        mapOf4.put("stock", "1");
         jedis.hmset("of:4", mapOf4);
 
 

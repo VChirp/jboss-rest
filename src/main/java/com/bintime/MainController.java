@@ -27,6 +27,7 @@ public class MainController {
         Set<String> prSet = jedis.keys("pr:*");
         Iterator<String> prIt = prSet.iterator();
         Product prod = new Product();
+
         while (prIt.hasNext()) {
             String prKey = prIt.next();
             if (jedis.hmget(prKey, "mpn").get(0).equals(mpn)) {
@@ -37,16 +38,14 @@ public class MainController {
                 String[] ofIds = jedis.hgetAll(prKey).get("offerIds").split(",");
                 for (String i : ofIds) {
                     Set<String> ofSet = jedis.keys("of:*");
-                    Iterator<String> ofIt = ofSet.iterator();
-                    while (ofIt.hasNext()) {
-                        String ofKey = ofIt.next();
+                    for (String ofKey : ofSet) {
                         if (jedis.hmget(ofKey, "id").get(0).equals(i)) {
+                            Offer offer = new Offer();
                             System.out.println(jedis.hgetAll(ofKey));
-
-                            list.add(new Offer(Integer.parseInt(jedis.hmget(ofKey, "id").get(0)),
-                                    Double.parseDouble(jedis.hmget(ofKey, "price").get(0)),
-                                    Integer.parseInt(jedis.hmget(ofKey, "stock").get(0))));
-
+                            offer.setId(Integer.parseInt(jedis.hmget(ofKey, "id").get(0)));
+                            offer.setStock(Integer.parseInt(jedis.hmget(ofKey, "stock").get(0)));
+                            offer.setPrice(Double.parseDouble(jedis.hmget(ofKey, "price").get(0)));
+                            list.add(offer);
                         }
                     }
                 }
@@ -56,26 +55,10 @@ public class MainController {
                 System.out.println("Didn`t found prod");
             }
         }
-//        Offer of = new Offer();
-//        of.setId(42);
-//        of.setPrice(112.12);
-//        of.setStock(3);
-//
-//        Offer of2 = new Offer();
-//        of2.setId(44);
-//        of2.setPrice(112.12);
-//        of2.setStock(2);
-
 
         //TODO Filter by availability
         //TODO Filter by pricesort
 
-
-//        Product prod = new Product();
-//        prod.setMpn("SA-12KP");
-//        prod.setStatus("Ok");
-//        prod.setId(43);
-//        prod.setArray(list);
         return prod;
     }
 }

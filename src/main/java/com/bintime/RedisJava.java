@@ -18,7 +18,7 @@ public class RedisJava {
         mapProd2.put("mpn", "SA-14KP");
         mapProd2.put("status", "ok");
         mapProd2.put("id", "12");
-        mapProd2.put("offerIds", "3,4");
+        mapProd2.put("offerIds", "3,4,7");
         jedis.hmset("pr:2", mapProd2);
         System.out.println(jedis.hgetAll("pr:2"));
 
@@ -26,9 +26,17 @@ public class RedisJava {
         mapProd1.put("mpn", "SA-12KP");
         mapProd1.put("status", "ok");
         mapProd1.put("id", "11");
-        mapProd1.put("offerIds", "1,2");
+        mapProd1.put("offerIds", "1,2,5");
         jedis.hmset("pr:1", mapProd1);
         System.out.println(jedis.hgetAll("pr:1"));
+
+        Map<String, String> mapProd3 = new HashMap<>();
+        mapProd3.put("mpn", "SA-16KP");
+        mapProd3.put("status", "ok");
+        mapProd3.put("id", "11");
+        mapProd3.put("offerIds", "6,8");
+        jedis.hmset("pr:3", mapProd3);
+        System.out.println(jedis.hgetAll("pr:3"));
 
         Map<String, String> mapOf1 = new HashMap<>();
         mapOf1.put("id", "1");
@@ -53,6 +61,30 @@ public class RedisJava {
         mapOf4.put("price", "16.8");
         mapOf4.put("stock", "1");
         jedis.hmset("of:4", mapOf4);
+
+        Map<String, String> mapOf5 = new HashMap<>();
+        mapOf5.put("id", "5");
+        mapOf5.put("price", "142.8");
+        mapOf5.put("stock", "0");
+        jedis.hmset("of:5", mapOf5);
+
+        Map<String, String> mapOf6 = new HashMap<>();
+        mapOf6.put("id", "6");
+        mapOf6.put("price", "152.3");
+        mapOf6.put("stock", "1");
+        jedis.hmset("of:6", mapOf6);
+
+        Map<String, String> mapOf7 = new HashMap<>();
+        mapOf7.put("id", "7");
+        mapOf7.put("price", "152.8");
+        mapOf7.put("stock", "2");
+        jedis.hmset("of:7", mapOf7);
+
+        Map<String, String> mapOf8 = new HashMap<>();
+        mapOf8.put("id", "8");
+        mapOf8.put("price", "162.2");
+        mapOf8.put("stock", "2");
+        jedis.hmset("of:8", mapOf8);
 
 
 //        System.out.println(jedis.hmget("of:1", "id", "price", "stock"));

@@ -11,9 +11,13 @@ import redis.clients.jedis.Jedis;
 import java.util.*;
 
 @Controller
-public class MainController {
+public class PriceController {
+    private final Jedis jedis;
+
     @Autowired
-    private Jedis jedis;
+    public PriceController(Jedis jedis) {
+        this.jedis = jedis;
+    }
 
     @ResponseBody
     @RequestMapping(value = "/getprice", method = RequestMethod.GET)

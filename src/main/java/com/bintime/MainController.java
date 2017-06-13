@@ -81,7 +81,7 @@ public class MainController {
     }
 
     private void sortByPriceSort(Integer pricesort, List<Offer> list) {
-        if (pricesort == null) return;
+        if (pricesort == null|| pricesort == 0) return;
         if (pricesort == 1) {
             Collections.sort(list, new Comparator<Offer>() {
                 @Override

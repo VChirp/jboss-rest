@@ -1,5 +1,6 @@
 package com.bintime;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -11,82 +12,104 @@ import java.util.*;
 
 @Controller
 public class MainController {
+    @Autowired
+    private Jedis jedis;
 
     @ResponseBody
     @RequestMapping(value = "/getprice", method = RequestMethod.GET)
-    public Product binRange(@RequestParam String mpn, @RequestParam Integer availability, @RequestParam Integer pricesort) {//TODO Make availability and price optional
-
-        Jedis jedis = new Jedis("localhost");
+    public Product getPrice(@RequestParam String mpn,
+                            @RequestParam(required = false) Integer availability,
+                            @RequestParam(required = false) Integer pricesort) {
 
         System.out.println("Server is running: " + jedis.ping());
-        Set<String> prSet = jedis.keys("pr:*");
-        Iterator<String> prIt = prSet.iterator();
-        Product prod = new Product();
-        while (prIt.hasNext()) {
-            String prKey = prIt.next();
-            if (jedis.hmget(prKey, "mpn").get(0).equals(mpn)) {
-                List<Offer> list = new LinkedList<>();
-                prod.setId(Integer.parseInt(jedis.hmget(prKey, "id").get(0)));
-                prod.setStatus(jedis.hmget(prKey, "status").get(0));
-                prod.setMpn(jedis.hmget(prKey, "mpn").get(0));
+        Map<String, String> productMap = jedis.hgetAll("pr:" + mpn);
+        if (productMap.isEmpty())
+            throw new RuntimeException("No such key for this mpn");
 
-                String[] ofIds = jedis.hgetAll(prKey).get("offerIds").split(",");
-                for (String i : ofIds) {
-                    Set<String> ofSet = jedis.keys("of:*");
-                    for (String ofKey : ofSet) {
-                        if (jedis.hmget(ofKey, "id").get(0).equals(i)) {
-                            Offer offer = new Offer();
-                            //Filter by availability
-                            if (availability == 0) {
-                                offer.setId(Integer.parseInt(jedis.hmget(ofKey, "id").get(0)));
-                                offer.setStock(Integer.parseInt(jedis.hmget(ofKey, "stock").get(0)));
-                                offer.setPrice(Double.parseDouble(jedis.hmget(ofKey, "price").get(0)));
-                                list.add(offer);
-                            } else if (availability == 1) {
-                                if (jedis.hmget(ofKey, "stock").get(0).equals("1") || jedis.hmget(ofKey, "stock").get(0).equals("2")) {
-                                    offer.setId(Integer.parseInt(jedis.hmget(ofKey, "id").get(0)));
-                                    offer.setStock(Integer.parseInt(jedis.hmget(ofKey, "stock").get(0)));
-                                    offer.setPrice(Double.parseDouble(jedis.hmget(ofKey, "price").get(0)));
-                                    list.add(offer);
-                                }
-                            } else if (availability == 2) {
-                                if (jedis.hmget(ofKey, "stock").get(0).equals("2")) {
-                                    offer.setId(Integer.parseInt(jedis.hmget(ofKey, "id").get(0)));
-                                    offer.setStock(Integer.parseInt(jedis.hmget(ofKey, "stock").get(0)));
-                                    offer.setPrice(Double.parseDouble(jedis.hmget(ofKey, "price").get(0)));
-                                    list.add(offer);
-                                }
-
-                            }
-                        }
-                    }
-                }
-                // Filter by pricesort
-                if (pricesort == 0) {
-                    prod.setArray(list);
-                } else if (pricesort == 1) {
-                    Collections.sort(list, new Comparator<Offer>() {
-                        @Override
-                        public int compare(Offer o1, Offer o2) {
-                            return Double.compare(o1.getPrice(), o2.getPrice());
-                        }
-                    });
-                    prod.setArray(list);
-                } else if (pricesort == 2) {
-                    Collections.sort(list, new Comparator<Offer>() {
-                        @Override
-                        public int compare(Offer o1, Offer o2) {
-                            return Double.compare(o2.getPrice(), o1.getPrice());
-                        }
-                    });
-                    prod.setArray(list);
-                }
-                break;
-            } else {
-                System.out.println("Didn`t found prod");
+        //TODO Change prod and of to normal variant
+        Product product = getProduct(productMap);
+        if (!mpn.equals(product.getMpn()))
+            throw new RuntimeException("mpn doesn't equal mpnValue");
+        List<Offer> offers = offersFor(productMap);
+        Iterator<Offer> it = offers.iterator();
+        while (it.hasNext()) {
+            Offer offer = it.next();
+            if (!offer.isAvailable(availability)) {
+                it.remove();
             }
         }
-
-        return prod;
+        sortByPriceSort(pricesort, offers);
+        product.setArray(offers);
+        return product;
     }
+
+    private Product getProduct(Map<String, String> productMap) {
+        Product product = new Product();
+        int id = Integer.parseInt(productMap.get("id"));
+        String mpnValue = productMap.get("mpn");
+        String status = productMap.get("status");
+        product.setMpn(mpnValue);
+        product.setId(id);
+        product.setStatus(status);
+        return product;
+    }
+
+    private List<Offer> offersFor(Map<String, String> productMap) {
+
+        String[] offerIds = productMap.get("offerIds").split(",");
+        List<Offer> offersList = new LinkedList<>();
+        for (String offerId : offerIds) {
+            Map<String, String> offerMap = jedis.hgetAll("of:" + offerId);
+            if (offerMap.isEmpty()) {
+                throw new RuntimeException("Can't find offer id: " + offerId);
+            }
+            Offer offer = getOffer(offerMap);
+            if (offer.getId() != Integer.parseInt(offerId)) {
+                throw new RuntimeException("Ids don't match");
+            }
+            offersList.add(offer);
+        }
+        return offersList;
+    }
+
+    private Offer getOffer(Map<String, String> offerMap) {
+        Offer offer = new Offer();
+        offer.setId(Integer.parseInt(offerMap.get("id")));
+        offer.setStock(Integer.parseInt(offerMap.get("stock")));
+        offer.setPrice(Double.parseDouble(offerMap.get("price")));
+        return offer;
+    }
+
+    private void sortByPriceSort(Integer pricesort, List<Offer> list) {
+        if (pricesort == null) return;
+        if (pricesort == 1) {
+            Collections.sort(list, new Comparator<Offer>() {
+                @Override
+                public int compare(Offer o1, Offer o2) {
+                    return Double.compare(o1.getPrice(), o2.getPrice());
+                }
+            });
+
+        } else if (pricesort == 2) {
+            Collections.sort(list, new Comparator<Offer>() {
+                @Override
+                public int compare(Offer o1, Offer o2) {
+                    return Double.compare(o2.getPrice(), o1.getPrice());
+                }
+            });
+        } else throw new RuntimeException("Wrong pricesort");
+    }
+
+//        private void validation(String offerIds){
+//        if (offerIds == null){
+//            throw new RuntimeException("offerIds aren`t exist");
+//        }else if(offerIds.trim().length() == 0){
+//            throw new RuntimeException("offerIds are empty");
+//        }else if(offerIds.contains()){
+//            throw new RuntimeException("Wrong symbol");
+//        }else if (){
+//
+//        }
+//    }
+
 }

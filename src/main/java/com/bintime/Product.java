@@ -8,6 +8,6 @@ import java.util.List;
 class Product {
     private int id;
     private String mpn;
-    private List<Offer> array;
     private String status;
+    private List<Offer> array;
 }
